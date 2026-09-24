@@ -1,0 +1,368 @@
+{
+  "name": "P1-D22 GitHub Issue Sync to Notion",
+  "nodes": [
+    {
+      "parameters": {
+        "url": "=https://api.github.com/repos/{{ $env.GITHUB_REPO_PATH }}/issues?state=all",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "githubOAuth2Api",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -656,
+        256
+      ],
+      "id": "75a2733d-9c7c-47b4-bb51-7973e7acb986",
+      "name": "GitHub Get All Issues",
+      "alwaysOutputData": false,
+      "credentials": {
+        "githubOAuth2Api": {
+          "id": "TqQUNKv46wB6q9mf",
+          "name": "GitHub account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "87bc265a-1f9a-48de-b430-3ab7f1a94c30",
+              "name": "Title",
+              "value": "={{ $json.title }}",
+              "type": "string"
+            },
+            {
+              "id": "d771ff0a-0689-4a30-a05f-dc9002d103aa",
+              "name": "Number",
+              "value": "={{ $json.number }}",
+              "type": "number"
+            },
+            {
+              "id": "d7862d0d-de82-4395-91f8-f714ca9e1f4c",
+              "name": "URL",
+              "value": "={{ $json.url }}",
+              "type": "string"
+            },
+            {
+              "id": "ee03dcc2-36bb-41cc-b409-aae425dbc4f3",
+              "name": "created_at",
+              "value": "={{ $json.created_at }}",
+              "type": "string"
+            },
+            {
+              "id": "ea6d6c4c-f460-4446-bdef-f0877ee3c8eb",
+              "name": "labels",
+              "value": "={{ $json.labels.map(l => l.name).join(\", \") }}",
+              "type": "string"
+            },
+            {
+              "id": "5eb6fd67-a4b0-4a55-b20e-0a4760d74956",
+              "name": "state",
+              "value": "={{ $json.state }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -464,
+        256
+      ],
+      "id": "05a47506-d63f-4ac3-950a-7d35f5a62dd6",
+      "name": "GitHub info arranged"
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "triggerAtHour": 2
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        -880,
+        256
+      ],
+      "id": "c048a8b9-6a3a-4528-a8d9-c96b51ad6b84",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "51568b12-fe1c-4fa2-96ff-190d1337bcfa",
+              "leftValue": "={{ $json.results.length === 0 }}",
+              "rightValue": true,
+              "operator": {
+                "type": "boolean",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        -32,
+        256
+      ],
+      "id": "6381268c-1ede-43ae-962b-57a59751e348",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "resource": "databasePage",
+        "operation": "update",
+        "pageId": {
+          "__rl": true,
+          "value": "={{ $json.results[0].id }}",
+          "mode": "id"
+        },
+        "propertiesUi": {
+          "propertyValues": [
+            {
+              "key": "Labels|rich_text",
+              "textContent": "={{ $('GitHub info arranged').all()[$itemIndex].json.labels }}"
+            },
+            {
+              "key": "State|rich_text",
+              "textContent": "={{ $('GitHub info arranged').all()[$itemIndex].json.state }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.notion",
+      "typeVersion": 2.2,
+      "position": [
+        176,
+        368
+      ],
+      "id": "808757bc-cc5b-40dd-9207-5831ecad6b30",
+      "name": "Update a database page",
+      "credentials": {
+        "notionApi": {
+          "id": "YsbtpTeDvob7pGag",
+          "name": "Notion GitHub Issues"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "databasePage",
+        "databaseId": {
+          "__rl": true,
+          "value": "={{ $env.NOTION_DATABASE_ID }}",
+          "mode": "id"
+        },
+        "title": "={{ $('GitHub info arranged').all()[$itemIndex].json.Title }}",
+        "propertiesUi": {
+          "propertyValues": [
+            {
+              "key": "Number|number",
+              "numberValue": "={{ $('GitHub info arranged').all()[$itemIndex].json.Number }}"
+            },
+            {
+              "key": "URL|url",
+              "urlValue": "={{ $('GitHub info arranged').all()[$itemIndex].json.URL }}"
+            },
+            {
+              "key": "State|rich_text",
+              "textContent": "={{ $('GitHub info arranged').all()[$itemIndex].json.state }}"
+            },
+            {
+              "key": "Created at|date",
+              "date": "={{ $('GitHub info arranged').all()[$itemIndex].json.created_at }}"
+            },
+            {
+              "key": "Labels|rich_text",
+              "textContent": "={{ $('GitHub info arranged').all()[$itemIndex].json.labels }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.notion",
+      "typeVersion": 2.2,
+      "position": [
+        192,
+        160
+      ],
+      "id": "e874dddf-9a3c-467d-8d03-a953d874d3b3",
+      "name": "Create a database page",
+      "credentials": {
+        "notionApi": {
+          "id": "YsbtpTeDvob7pGag",
+          "name": "Notion GitHub Issues"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://api.notion.com/v1/databases/{{ $env.NOTION_DATABASE_ID }}/query",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "notionApi",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Notion-Version",
+              "value": "2022-06-28"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"filter\": {\n    \"property\": \"Number\",\n    \"number\": {\n      \"equals\": {{ $json.Number }}\n    }\n  }\n}\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        -272,
+        256
+      ],
+      "id": "57cc6cb2-828b-48ca-bf9c-967bbf917ba9",
+      "name": "Get many database pages from Notion",
+      "credentials": {
+        "notionApi": {
+          "id": "YsbtpTeDvob7pGag",
+          "name": "Notion GitHub Issues"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "\n## GitHub Issue Sync to Notion\n\n**Purpose:** Syncs open GitHub issues into a Notion database on a schedule.\n\n**Trigger:** Schedule Trigger (every day)\n\n**Requires:**\n- GitHub OAuth2 credential\n- Notion integration token\n- Environment variable: NOTION_DATABASE_ID\n\n**Output:** Notion page created or updated per issue.\n\n",
+        "height": 512
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -1168,
+        16
+      ],
+      "typeVersion": 1,
+      "id": "ca52c565-8aa2-4c7b-9618-8fbf67a5b9fd",
+      "name": "Sticky Note"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "GitHub Get All Issues": {
+      "main": [
+        [
+          {
+            "node": "GitHub info arranged",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GitHub info arranged": {
+      "main": [
+        [
+          {
+            "node": "Get many database pages from Notion",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "GitHub Get All Issues",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Create a database page",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Update a database page",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get many database pages from Notion": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "52d09abe-78b3-46cd-a1c2-f5537a988189",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "7ebeff7d63bf2f26c9f4106ef3f0c0aa938dd25bdc4d51784b4f0f7b89989a82"
+  },
+  "nodeGroups": [],
+  "id": "MBFMSHqef9xgl8Ft",
+  "tags": [
+    {
+      "updatedAt": "2026-09-22T00:02:51.236Z",
+      "createdAt": "2026-09-22T00:02:51.236Z",
+      "id": "1aZgzTqvNkM0fKBk",
+      "name": "github-api"
+    },
+    {
+      "updatedAt": "2026-09-22T00:02:27.014Z",
+      "createdAt": "2026-09-22T00:02:27.014Z",
+      "id": "d8qTAqE5O7CPyfyG",
+      "name": "Notion"
+    },
+    {
+      "updatedAt": "2026-09-22T00:03:12.123Z",
+      "createdAt": "2026-09-22T00:03:12.123Z",
+      "id": "j2S1NOriU82ahhI7",
+      "name": "demo-ready"
+    }
+  ]
+}
